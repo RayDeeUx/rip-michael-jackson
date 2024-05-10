@@ -1,0 +1,18 @@
+{
+	"geode": "2.0.0-beta.21",
+	"gd": {
+		"win": "2.204",
+		"android": "2.205"
+	},
+	"version": "v1.0.0",
+	"id": "xanii.michael_jackson",
+	"name": "michael_jackson",
+	"developer": "Xanii",
+	"description": "",
+	"resources": {
+		"files": [
+			"resources/*.png",
+			"resources/*.mp3"
+		]
+	}
+}
