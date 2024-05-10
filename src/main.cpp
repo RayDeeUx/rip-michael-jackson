@@ -1,20 +1,18 @@
-#include <Geode/Geode.hpp>
 #include <Geode/modify/CreatorLayer.hpp>
-
 #include "MichaelJacksonLayer.hpp"
 
 using namespace geode::prelude;
 
 class $modify(MJCallback, CreatorLayer) {
-
-CCSprite* mjBtnSprite;
-CCMenuItemSpriteExtra* mjButton;
-
+	struct Fields {
+		CCSprite* mjBtnSprite;
+		CCMenuItemSpriteExtra* mjButton;
+	};
 	bool init() {
 		bool result = CreatorLayer::init();
-		auto director = CCDirector::sharedDirector();
-		auto size = director->getWinSize();
-		auto doorButton = reinterpret_cast<CCMenu*>(getChildByID("bottom-right-menu"));
+		CCDirector* director = CCDirector::sharedDirector();
+		CCSize size = director->getWinSize();
+		CCMenu* doorButton = reinterpret_cast<CCMenu*>(getChildByID("bottom-right-menu"));
 		FMODAudioEngine* fm = FMODAudioEngine::sharedEngine();
 
 		CCMenu* menu = CCMenu::create();
@@ -35,7 +33,7 @@ CCMenuItemSpriteExtra* mjButton;
 	}
 
 	void MichaelJackson(CCObject*) {
-		auto fm = FMODAudioEngine::sharedEngine();
+		FMODAudioEngine* fm = FMODAudioEngine::sharedEngine();
 		fm->stopAllMusic();
 		fm->stopAllActions();
 		fm->stopAllEffects();

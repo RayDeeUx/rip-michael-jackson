@@ -1,66 +1,78 @@
 #pragma once
 
-#include <Geode/DefaultInclude.hpp>
-#include <Geode/modify/PlayLayer.hpp>
-#include <Geode/modify/GameLevelManager.hpp>
-#include <Geode/modify/CreatorLayer.hpp>
-#include <cocos2d.h>
-
 using namespace geode::prelude;
 
-int songNum;
-std::string songName;
-
-class MJLayer : public CCLayer {
-protected:
-    bool init();
-    void keyBackClicked() override;
-
+class MJLayer : public cocos2d::CCLayer {
+private:
+    int songNum = -1; // must init with same value for best results
+    int currentSong = -1; // must init with same value for best results
+    std::string songName;
+    std::vector<std::string> songNames = {
+        "Billie Jean",
+        "Beat It",
+        "Smooth Criminal",
+        "Thriller"
+    };
 public:
     static MJLayer* create();
     static MJLayer* scene();
+    
+    bool init();
+    void keyBackClicked();
 
-    void onGoBack(CCObject*);
-    void selectSong(CCObject*);
+    void onClose(CCObject* sender);
+    void selectSong(CCObject* sender);
 };
 
 bool MJLayer::init() {
-    if (!CCLayer::init())
-        return false;
+    if (!CCLayer::init()) { return false; }
 
     FMODAudioEngine::sharedEngine()->playMusic("heehee.mp3"_spr, false, 1, 0);
     selectSong(nullptr);
 
-    auto screen = CCDirector::sharedDirector();
-    CCLabelBMFont* ripText = CCLabelBMFont::create("RIP MICHAEL JACKSON", "goldFont.fnt");
-    CCLabelBMFont* dateText = CCLabelBMFont::create("1958 - 2009", "goldFont.fnt");
-    CCSprite* MJ = CCSprite::create("mj.png"_spr);
-    CCSprite* backSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+    CCDirector* screen = CCDirector::sharedDirector();
+    
     CCSprite* bg = CCSprite::create("game_bg_13_001.png");
     bg->setColor({0,4,24});
     bg->setScale(2.5);
-    CCMenu* backMenu = CCMenu::create();
-    CCMenu* MJMenu = CCMenu::create();
+    bg->setID("background"_spr);
+    
+    CCSprite* mjSprite = CCSprite::create("mj.png"_spr);
+    mjSprite->setScale(1.2);
+    mjSprite->setID("michael-jackson-sprite"_spr);
+    
+    CCMenuItemSpriteExtra* mjBtn = CCMenuItemSpriteExtra::create(mjSprite, this, menu_selector(MJLayer::selectSong));
+    mjBtn->setID("michael-jackson-button"_spr);
+    
+    CCMenu* mjMenu = CCMenu::create();
+    mjMenu->setID("michael-jackson-menu"_spr);
+    mjMenu->setPosition({screen->getWinSize().width / 2, screen->getWinSize().height / 2});
+    mjMenu->addChild(mjBtn);
+    
+    CCSprite* backSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
     backSprite->setScale(1.1);
-    CCMenuItemSpriteExtra* backBtn = CCMenuItemSpriteExtra::create(backSprite, this, menu_selector(MJLayer::onGoBack));
-    MJ->setScale(1.2);
-    CCMenuItemSpriteExtra* mjBtn = CCMenuItemSpriteExtra::create(MJ, this, menu_selector(MJLayer::selectSong));
-
+    backSprite->setID("back-sprite"_spr);
+    
+    CCMenuItemSpriteExtra* backBtn = CCMenuItemSpriteExtra::create(backSprite, this, menu_selector(MJLayer::onClose));
+    backBtn->setID("back-button"_spr);
+    
+    CCMenu* backMenu = CCMenu::create();
+    backMenu->setID("back-menu"_spr);
     backMenu->setPosition({25.5, 290});
-
-
-    ripText->setPosition(MJ->getPosition());
-    ripText->setPositionY(MJ->getPositionY() + 140);
-
-    dateText->setPosition(MJ->getPosition());
-    dateText->setPositionY(MJ->getPositionY() - 140);
-
-    MJMenu->setPosition({screen->getWinSize().width / 2, screen->getWinSize().height / 2});
-
     backMenu->addChild(backBtn);
-    MJMenu->addChild(mjBtn);
+    
+    CCLabelBMFont* ripText = CCLabelBMFont::create("RIP MICHAEL JACKSON", "goldFont.fnt");
+    ripText->setPosition(mjSprite->getPosition());
+    ripText->setPositionY(mjSprite->getPositionY() + 140);
+    ripText->setID("rip-text"_spr);
+
+    CCLabelBMFont* dateText = CCLabelBMFont::create("1958 - 2009", "goldFont.fnt");
+    dateText->setPosition(mjSprite->getPosition());
+    dateText->setPositionY(mjSprite->getPositionY() - 140);
+    dateText->setID("date-text"_spr);
+    
     addChild(bg, -1);
-    addChild(MJMenu);
+    addChild(mjMenu);
     addChild(backMenu);
     addChild(dateText);
     addChild(ripText);
@@ -68,52 +80,60 @@ bool MJLayer::init() {
     return true;
 }
 
-void MJLayer::selectSong(CCObject*) {
-
-    auto screen = CCDirector::sharedDirector();
-
-    songNum = rand() % 4;
-
-    FMODAudioEngine::sharedEngine()->stopAllActions();
-    FMODAudioEngine::sharedEngine()->stopAllMusic();
-    FMODAudioEngine::sharedEngine()->stopAllEffects();
-
-    switch (songNum) {
-        case 0: FMODAudioEngine::sharedEngine()->playMusic("Billie Jean.mp3"_spr, false, 1, 0); songName = "Billie Jean"; break;
-        case 1: FMODAudioEngine::sharedEngine()->playMusic("Beat it.mp3"_spr, false, 1, 0); songName = "Beat It"; break;
-        case 2: FMODAudioEngine::sharedEngine()->playMusic("Smooth Criminal.mp3"_spr, false, 1, 0); songName = "Smooth Criminal"; break;
-        case 3: FMODAudioEngine::sharedEngine()->playMusic("Thriller.mp3"_spr, false, 1, 0); songName = "Thriller"; break;
+void MJLayer::selectSong(CCObject* sender) {
+    while (songNum == currentSong) {
+        songNum = rand() % 4;
     }
+    currentSong = songNum;
+
+    FMODAudioEngine* fmod = FMODAudioEngine::sharedEngine();
+    
+    fmod->stopAllActions();
+    fmod->stopAllMusic();
+    fmod->stopAllEffects();
+
+    songName = songNames[songNum];
+    
+    std::string formattedSong = fmt::format(fmt::runtime("{}.mp3"_spr), songName);
+    fmod->playMusic(formattedSong, false, 1, 0);
+    
     log::debug("{} {}", songNum, songName);
-
-    CCLabelBMFont* playingText = CCLabelBMFont::create(songName.c_str(), "chatFont.fnt");
-    CCLabelBMFont* playingNow = CCLabelBMFont::create("Now Playing", "goldFont.fnt");
-    CCScale9Sprite* playingBG = CCScale9Sprite::create("GJ_square01.png");
-    playingBG->setContentSize(CCSize(160, 110));
-    playingBG->setPosition({474, 164});
-
-    playingNow->setPosition({playingBG->getPosition()});
-    playingNow->setPositionY(playingNow->getPositionY() + 40);
-    playingNow->setScale(0.9);
-
-    playingText->setPosition({playingBG->getPosition()});
-    playingText->setScale(1.2);
-    playingText->setID("playingText");
-    if (getChildByID("playingText")) removeChildByID("playingText"); 
-    this->addChild(playingText, 2);
-    this->addChild(playingBG);
-    this->addChild(playingNow);
+    
+    if (CCLabelBMFont* currSongLabel = typeinfo_cast<CCLabelBMFont*>(getChildByID("curr-song-label"_spr))) {
+        currSongLabel->setString(songName.c_str());
+    } else {
+        CCLabelBMFont* playingText = CCLabelBMFont::create(songName.c_str(), "chatFont.fnt");
+        CCLabelBMFont* playingNow = CCLabelBMFont::create("Now Playing", "goldFont.fnt");
+        CCScale9Sprite* playingBG = CCScale9Sprite::create("GJ_square01.png");
+        
+        playingBG->setContentSize(CCSize(160, 110));
+        playingBG->setPosition({474, 164});
+        playingBG->setID("playing-bg"_spr);
+    
+        playingNow->setPosition({playingBG->getPosition()});
+        playingNow->setPositionY(playingNow->getPositionY() + 40);
+        playingNow->setScale(0.9);
+        playingNow->setID("now-playing-label"_spr);
+    
+        playingText->setPosition({playingBG->getPosition()});
+        playingText->setScale(1.2);
+        playingText->setID("curr-song-label"_spr);
+        
+        addChild(playingText, 2);
+        addChild(playingBG);
+        addChild(playingNow);
+    }
 }
 
 void MJLayer::keyBackClicked() {
-    this->onGoBack(nullptr);
+    log::info("goback");
+    onClose(nullptr);
 }
 
-void MJLayer::onGoBack(CCObject*) {
-    CreatorLayer* cl = CreatorLayer::create();
-    CCScene* scene = cl->scene();
-    auto transition = CCTransitionFade::create(0.5f, scene);
-    CCDirector::sharedDirector()->replaceScene(transition);
+void MJLayer::onClose(CCObject* sender) {
+    CCScene* scene = CCScene::create();
+    scene->addChild(CreatorLayer::create());
+    CCDirector::sharedDirector()->replaceScene(CCTransitionFade::create(0.5f, scene));
 }
 
 MJLayer* MJLayer::create() {
@@ -127,10 +147,10 @@ MJLayer* MJLayer::create() {
 }
 
 MJLayer* MJLayer::scene() {
-    auto layer = MJLayer::create();
-    auto scene = CCScene::create();
+    MJLayer* layer = MJLayer::create();
+    CCScene* scene = CCScene::create();
     scene->addChild(layer);
-    auto transition = CCTransitionFade::create(0.5f, scene);
+    CCTransitionFade* transition = CCTransitionFade::create(0.5f, scene);
     CCDirector::sharedDirector()->replaceScene(transition);
 
     return layer;
